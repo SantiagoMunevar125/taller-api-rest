@@ -369,5 +369,5 @@ Periodo Académico I-2026
 ---
 
 <div align="center">
-<sub>Universidad Pedagógica y Tecnológica de Colombia · Tunja, Boyacá</sub>
+<sub>Universidad Pedagógica y Tecnológica de Colombia · Sogamoso, Boyacá</sub>
 </div>
