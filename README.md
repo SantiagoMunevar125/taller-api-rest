@@ -102,52 +102,28 @@ graph TD
 ```mermaid
 sequenceDiagram
     actor C as Cliente
-    participant A as API /auth
+    participant M as verifyToken Middleware
     participant J as JWT
     participant DB as MongoDB
 
-    C->>A: POST /api/auth/login {username, password}
-    A->>DB: Buscar usuario
-    DB-->>A: Usuario encontrado
-    A->>J: Firmar payload con JWT_SECRET
-    J-->>A: Token generado
-    A-->>C: { token: "eyJ..." }
+    C->>M: DELETE /api/companies/:id + Bearer token
+    M->>J: jwt.verify(token, JWT_SECRET)
+    J-->>M: Payload válido ✓
+    M->>DB: findByIdAndDelete(id)
+    DB-->>M: Documento eliminado
+    M-->>C: { state: true, data: {...} }
 
-    Note over C,DB: Peticiones protegidas
+    Note over C,DB: Sin token o token inválido
 
-    C->>A: DELETE /api/companies/:id + Bearer token
-    A->>J: Verificar token
-    J-->>A: Payload válido ✓
-    A->>DB: findByIdAndDelete(id)
-    DB-->>A: Documento eliminado
-    A-->>C: { state: true, data: {...} }
+    C->>M: POST /api/companies (sin token)
+    M-->>C: 401 { error: "Token requerido" }
 ```
 
 ---
 
 ## 🔐 Seguridad y Autenticación
 
-La API usa **JSON Web Tokens (JWT)** para proteger los endpoints de escritura.
-
-### Obtener un token
-
-```http
-POST /api/auth/login
-Content-Type: application/json
-
-{
-  "username": "tu_usuario",
-  "password": "tu_contraseña"
-}
-```
-
-**Respuesta:**
-```json
-{
-  "state": true,
-  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-}
-```
+La API usa **JSON Web Tokens (JWT)** para proteger los endpoints de escritura. El middleware `verifyToken` valida el token en el header de cada petición protegida.
 
 ### Usar el token en peticiones protegidas
 
@@ -162,13 +138,6 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 ## 🚀 Endpoints
 
 **Base URL:** `https://taller-api-rest.onrender.com`
-
-### 🔑 Auth
-
-| Método | Endpoint | Descripción | Auth |
-|--------|----------|-------------|:----:|
-| `POST` | `/api/auth/register` | Registrar nuevo usuario | ❌ |
-| `POST` | `/api/auth/login` | Iniciar sesión y obtener token | ❌ |
 
 ### 🏢 Companies
 
@@ -321,7 +290,7 @@ La documentación interactiva está disponible en:
 https://taller-api-rest.onrender.com/api-docs
 ```
 
-Desde Swagger UI puedes autenticarte con tu token JWT y ejecutar cualquier endpoint directamente desde el navegador.
+Desde Swagger UI puedes explorar y ejecutar cualquier endpoint directamente desde el navegador.
 
 ---
 
@@ -381,8 +350,7 @@ taller-api-rest/
 │   └── controll-game.js    # getAll, findById, save, update, remove
 ├── routes/
 │   ├── routes-company.js   # GET/POST /companies · GET/PUT/DELETE /companies/:id
-│   ├── routes-game.js      # GET/POST /games · GET/PUT/DELETE /games/:id
-│   └── auth.js             # POST /auth/register · POST /auth/login
+│   └── routes-game.js      # GET/POST /games · GET/PUT/DELETE /games/:id
 ├── middleware/
 │   └── verifyToken.js      # Middleware JWT — protege POST, PUT, DELETE
 ├── index.js                # Entry point — Express, Mongoose, Swagger
