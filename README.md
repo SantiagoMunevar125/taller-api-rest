@@ -360,19 +360,6 @@ taller-api-rest/
 
 ---
 
-## 🎯 Criterios de Evaluación
-
-| Criterio | Puntaje | Estado |
-|----------|:-------:|:------:|
-| Documentos del sistema (Diagrama de Clases + Despliegue) | 15 pts | ✅ |
-| Documentación Swagger | 10 pts | ✅ |
-| Seguridad JWT | 15 pts | ✅ |
-| Persistencia MongoDB Atlas | 20 pts | ✅ |
-| Funcionalidad CRUD completa | 40 pts | ✅ |
-| **Total** | **100 pts** | |
-
----
-
 ## 👤 Autor
 
 **Santiago Munevar**  

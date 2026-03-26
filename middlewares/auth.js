@@ -14,7 +14,7 @@ function verifyToken(req, res, next) {
         if (!token) {
             return res.status(401).json({ error: 'Formato de token invalido' })
         }
-
+// 
         const payload = jwt.verify(token, key)
         req.user = payload
         next()
