@@ -3,6 +3,8 @@ require('dotenv').config()
 const express = require('express')
 const jwt = require('jsonwebtoken')
 
+const cors = require('cors')
+
 const routes_company = require('./routes/routes-company.js')
 const routes_game = require('./routes/routes-game.js')
 
@@ -17,6 +19,7 @@ const key = process.env.JWT_SECRET
 const PORT = process.env.PORT || 3000
 
 APP.use('/docs', swaggerUI.serve, swaggerUI.setup(swaggerSpec))
+APP.use(cors())
 APP.use(express.json())
 APP.use(express.urlencoded({ extended: false }))
 
