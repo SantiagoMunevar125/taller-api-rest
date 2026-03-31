@@ -35,12 +35,12 @@ const options = {
 
         servers: [
             {
-                url: 'http://localhost:3000',
-                description: 'Servidor de desarrollo'
-            },
-            {
                 url: 'https://taller-api-rest-o1tt.onrender.com',
                 description: 'Servidor de producción'
+            },
+            {
+                url: 'http://localhost:3000',
+                description: 'Servidor de desarrollo'
             }
         ]
     },
