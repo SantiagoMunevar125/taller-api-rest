@@ -1,0 +1,1688 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>GameVault API — Panel de Control</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet"/>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet"/>
+  <style>
+    :root {
+      --primary: #00ff88;
+      --primary-dim: #00ff8820;
+      --accent: #ff3c5a;
+      --bg: #080c10;
+      --surface: #0f1520;
+      --surface2: #161d2b;
+      --border: #1e2d42;
+      --text: #c8d8ee;
+      --text-dim: #567090;
+      --font-display: 'Syne', sans-serif;
+      --font-mono: 'Space Mono', monospace;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-mono);
+      font-size: 13px;
+      min-height: 100vh;
+    }
+
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,.06) 2px, rgba(0,0,0,.06) 4px);
+      pointer-events: none; z-index: 9999;
+    }
+
+    /* ── SIDEBAR ── */
+    #sidebar {
+      width: 240px; height: 100vh;
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      display: flex; flex-direction: column;
+      position: fixed; left: 0; top: 0;
+      z-index: 100;
+      overflow-y: auto;
+      scrollbar-width: thin;
+      scrollbar-color: var(--border) var(--surface);
+    }
+    #sidebar::-webkit-scrollbar { width: 5px; }
+    #sidebar::-webkit-scrollbar-track { background: var(--surface); }
+    #sidebar::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
+    #sidebar::-webkit-scrollbar-thumb:hover { background: var(--primary); }
+
+    .sidebar-brand {
+      padding: 24px 20px 18px;
+      border-bottom: 1px solid var(--border);
+    }
+    .sidebar-brand .logo-text {
+      font-family: var(--font-display);
+      font-size: 22px; font-weight: 800;
+      color: #fff; letter-spacing: -0.5px;
+    }
+    .sidebar-brand .logo-text span { color: var(--primary); }
+    .sidebar-brand small {
+      display: block; color: var(--text-dim);
+      font-size: 10px; margin-top: 3px; letter-spacing: 2px;
+    }
+
+    .sidebar-token-area {
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--border);
+    }
+    .sidebar-token-area label { color: var(--text-dim); font-size: 10px; letter-spacing: 1.5px; display: block; margin-bottom: 5px; }
+    .token-status { display: flex; align-items: center; gap: 7px; }
+    .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); flex-shrink: 0; }
+    .dot.active { background: var(--primary); box-shadow: 0 0 8px var(--primary); animation: pulse 2s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+
+    .nav-section-title {
+      padding: 18px 16px 6px;
+      font-size: 10px; letter-spacing: 2px; color: var(--text-dim); text-transform: uppercase;
+    }
+    .nav-btn {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 16px; cursor: pointer;
+      border: none; background: none; color: var(--text-dim);
+      font-family: var(--font-mono); font-size: 12px;
+      width: 100%; text-align: left;
+      border-left: 3px solid transparent;
+      transition: all .15s;
+    }
+    .nav-btn:hover { color: var(--text); background: var(--surface2); }
+    .nav-btn.active { color: var(--primary); border-left-color: var(--primary); background: var(--primary-dim); }
+    .nav-btn i { font-size: 16px; width: 20px; text-align: center; }
+
+    .sidebar-footer {
+      margin-top: auto; padding: 16px;
+      border-top: 1px solid var(--border);
+      color: var(--text-dim); font-size: 10px;
+    }
+
+    /* ── MAIN ── */
+    #main { margin-left: 240px; min-height: 100vh; }
+
+    .topbar {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 14px 28px;
+      display: flex; align-items: center; gap: 12px;
+      flex-wrap: wrap;
+    }
+    .topbar .page-title {
+      font-family: var(--font-display);
+      font-size: 20px; font-weight: 700; color: #fff;
+    }
+    .topbar .badge-method { font-size: 10px; padding: 3px 8px; border-radius: 3px; letter-spacing: 1px; }
+
+    .content { padding: 28px; }
+
+    /* ── CARDS ── */
+    .api-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      margin-bottom: 16px;
+      overflow: hidden;
+    }
+    .api-card .card-header-custom {
+      padding: 14px 18px;
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; gap: 10px;
+    }
+    .api-card .card-body-custom { padding: 18px; }
+
+    /* ── METHOD BADGES ── */
+    .method-get    { background: #0d3b26; color: #00ff88; border: 1px solid #00ff8855; }
+    .method-post   { background: #1a2d0d; color: #7fff00; border: 1px solid #7fff0055; }
+    .method-put    { background: #2d2000; color: #ffaa00; border: 1px solid #ffaa0055; }
+    .method-delete { background: #2d0a0f; color: #ff3c5a; border: 1px solid #ff3c5a55; }
+
+    /* ── INPUTS ── */
+    .form-control, .form-select {
+      background: var(--surface2) !important;
+      border: 1px solid var(--border) !important;
+      color: var(--text) !important;
+      font-family: var(--font-mono) !important;
+      font-size: 12px !important;
+      border-radius: 4px !important;
+    }
+    .form-control::placeholder { color: var(--text-dim) !important; }
+    .form-control:focus, .form-select:focus {
+      box-shadow: 0 0 0 2px var(--primary-dim) !important;
+      border-color: var(--primary) !important;
+    }
+    .form-select option { background: var(--surface2); }
+    .form-label { color: var(--text-dim); font-size: 10px; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 4px; }
+
+    /* ── BUTTONS ── */
+    .btn-execute {
+      background: var(--primary); color: #000;
+      font-family: var(--font-display); font-weight: 700;
+      font-size: 13px; border: none;
+      padding: 9px 22px; border-radius: 4px;
+      cursor: pointer; letter-spacing: 0.5px;
+      transition: opacity .15s;
+      display: inline-flex; align-items: center; gap: 6px;
+    }
+    .btn-execute:hover { opacity: .85; }
+    .btn-execute:disabled { opacity: .4; cursor: not-allowed; }
+    .btn-execute.danger { background: var(--accent); }
+
+    .btn-clear {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text-dim);
+      font-family: var(--font-mono); font-size: 12px;
+      padding: 9px 16px; border-radius: 4px;
+      cursor: pointer; transition: all .15s;
+      display: inline-flex; align-items: center; gap: 6px;
+    }
+    .btn-clear:hover { border-color: var(--text-dim); color: var(--text); }
+
+    /* ── URL DISPLAY ── */
+    .url-display {
+      background: #050810;
+      border: 1px solid var(--border);
+      border-radius: 4px; padding: 8px 12px;
+      font-family: var(--font-mono); font-size: 11px;
+      color: var(--text-dim); word-break: break-all;
+      margin-bottom: 14px;
+    }
+    .url-display .method-tag { font-weight: 700; margin-right: 8px; }
+
+    /* ── RESPONSE PANEL ── */
+    .response-panel {
+      background: #050810;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 16px;
+      margin-top: 14px;
+    }
+    .resp-meta {
+      display: flex; align-items: center; gap: 10px;
+      margin-bottom: 12px; flex-wrap: wrap;
+    }
+    .status-badge {
+      font-size: 11px; padding: 3px 10px; border-radius: 3px;
+      font-family: var(--font-mono); font-weight: 700;
+    }
+    .status-2xx { background: #00ff8820; color: var(--primary); border: 1px solid #00ff8844; }
+    .status-4xx { background: #ff3c5a20; color: var(--accent); border: 1px solid #ff3c5a44; }
+    .status-err { background: #ffaa0020; color: #ffaa00; border: 1px solid #ffaa0044; }
+    .resp-time { color: var(--text-dim); font-size: 10px; }
+
+    pre.response-body {
+      color: var(--text);
+      font-family: var(--font-mono);
+      font-size: 11px;
+      white-space: pre-wrap;
+      word-break: break-all;
+      margin: 0;
+      max-height: 300px;
+      overflow-y: auto;
+      line-height: 1.7;
+    }
+    pre.response-body::-webkit-scrollbar { width: 4px; }
+    pre.response-body::-webkit-scrollbar-track { background: transparent; }
+    pre.response-body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+    .json-key  { color: #79c0ff; }
+    .json-str  { color: #a5d6ff; }
+    .json-num  { color: #ffa657; }
+    .json-bool { color: var(--primary); }
+    .json-null { color: var(--accent); }
+
+    /* ── DATA TABLE ── */
+    .data-table { width: 100%; border-collapse: collapse; }
+    .data-table th {
+      background: var(--surface2);
+      color: var(--text-dim); font-size: 10px; letter-spacing: 1.5px;
+      padding: 10px 14px; text-align: left; border-bottom: 1px solid var(--border);
+      font-weight: normal; text-transform: uppercase;
+    }
+    .data-table td {
+      padding: 10px 14px; border-bottom: 1px solid var(--border);
+      color: var(--text); font-size: 12px; vertical-align: middle;
+    }
+    .data-table tr:last-child td { border-bottom: none; }
+    .data-table tr:hover td { background: #0d1520; }
+
+    .id-chip {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 4px; padding: 2px 8px;
+      font-size: 10px; color: var(--text-dim);
+      font-family: var(--font-mono); max-width: 110px;
+      overflow: hidden; text-overflow: ellipsis;
+      display: inline-block; white-space: nowrap;
+      cursor: pointer; transition: all .15s;
+    }
+    .id-chip:hover { border-color: var(--primary); color: var(--primary); }
+    .id-chip:active { background: var(--primary-dim); }
+
+    .genre-tag {
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 20px; padding: 2px 10px;
+      font-size: 10px; color: var(--text-dim);
+    }
+
+    .rating-bar {
+      display: flex; align-items: center; gap: 8px;
+    }
+    .rating-fill {
+      height: 4px; border-radius: 2px;
+      background: linear-gradient(90deg, var(--primary), #00ccff);
+    }
+    .rating-fill-bg {
+      width: 60px; height: 4px; border-radius: 2px;
+      background: var(--border);
+    }
+
+    .empty-state {
+      text-align: center; padding: 32px;
+      color: var(--text-dim); font-size: 12px;
+    }
+    .empty-state i { font-size: 32px; display: block; margin-bottom: 8px; opacity: .3; }
+
+    /* ── SECTION ── */
+    .section { display: none; }
+    .section.active { display: block; }
+
+    .section-subtitle {
+      color: var(--text-dim); font-size: 10px; letter-spacing: 2px;
+      text-transform: uppercase; margin-bottom: 18px;
+      padding-bottom: 8px; border-bottom: 1px solid var(--border);
+    }
+
+    /* ── WARNING BOX ── */
+    .warn-box {
+      background: #2d0a0f; border: 1px solid #ff3c5a44;
+      border-radius: 6px; padding: 12px 14px; margin-bottom: 14px;
+      display: flex; align-items: flex-start; gap: 8px;
+    }
+    .warn-box i { color: var(--accent); margin-top: 1px; flex-shrink: 0; }
+    .warn-box span { color: #ff8090; font-size: 12px; line-height: 1.5; }
+
+    /* ── TOAST ── */
+    .toast-area { position: fixed; bottom: 20px; right: 20px; z-index: 9000; }
+    .toast-item {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--primary);
+      border-radius: 6px; padding: 12px 16px;
+      margin-top: 8px; font-size: 12px;
+      animation: slideIn .25s ease;
+      max-width: 300px;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .toast-item.err { border-left-color: var(--accent); }
+    .toast-item i { font-size: 15px; }
+    @keyframes slideIn { from{opacity:0;transform:translateX(20px)} to{opacity:1;transform:translateX(0)} }
+
+    /* ── SPINNER ── */
+    .spinner-glow {
+      width: 16px; height: 16px;
+      border: 2px solid var(--border);
+      border-top-color: var(--primary);
+      border-radius: 50%;
+      animation: spin .6s linear infinite;
+      display: inline-block;
+    }
+    @keyframes spin { to{transform:rotate(360deg)} }
+
+    /* ── AUTH SPECIAL ── */
+    .auth-card-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    @media(max-width: 900px){ .auth-card-grid { grid-template-columns: 1fr; } }
+
+    .token-preview {
+      background: #050810; border: 1px solid var(--border);
+      border-radius: 6px; padding: 12px;
+      font-family: var(--font-mono); font-size: 10px;
+      color: var(--primary); word-break: break-all;
+      line-height: 1.6; margin-top: 12px;
+      display: none;
+    }
+    .token-preview.visible { display: block; }
+
+    .info-row {
+      display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px;
+    }
+    .info-pill {
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 20px; padding: 4px 12px;
+      font-size: 10px; color: var(--text-dim); display: flex; align-items: center; gap: 5px;
+    }
+    .info-pill b { color: var(--text); }
+
+    textarea.form-control { resize: vertical; min-height: 80px; }
+
+    .copy-btn {
+      background: none; border: none; color: var(--text-dim);
+      cursor: pointer; padding: 2px 6px; font-size: 13px;
+      border-radius: 3px; transition: color .15s;
+    }
+    .copy-btn:hover { color: var(--primary); }
+
+    /* ── SERVER CONFIG ── */
+    .server-config-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px; padding: 16px 18px;
+      margin-bottom: 24px;
+      display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+    }
+    .server-config-card label { color: var(--text-dim); font-size: 10px; letter-spacing: 1px; text-transform: uppercase; white-space: nowrap; }
+    .server-status { font-size: 11px; }
+    .server-status.ok { color: var(--primary); }
+    .server-status.fail { color: var(--accent); }
+
+    @media(max-width: 768px){
+      #sidebar { position: relative; width: 100%; height: auto; }
+      #main { margin-left: 0; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<div id="sidebar">
+  <div class="sidebar-brand">
+    <div class="logo-text">Game<span>Vault</span></div>
+    <small>API REST · TALLER ELECTIVA-II</small>
+  </div>
+
+  <div class="sidebar-token-area">
+    <label>JWT TOKEN</label>
+    <div class="token-status">
+      <div class="dot" id="dotIndicator"></div>
+      <span id="tokenLabel" style="color:var(--text-dim);font-size:11px;">Sin autenticar</span>
+    </div>
+    <div style="display:flex;gap:4px;margin-top:8px;">
+      <input type="text" id="jwtInput" class="form-control"
+             placeholder="Pega tu token aquí…" style="font-size:10px;"
+             oninput="updateTokenStatus()"/>
+      <button class="copy-btn" title="Limpiar token" onclick="clearToken()"><i class="bi bi-x-circle"></i></button>
+    </div>
+  </div>
+
+  <div class="nav-section-title">AUTH</div>
+  <button class="nav-btn active" onclick="showSection('auth', this)">
+    <i class="bi bi-shield-lock-fill"></i> Autenticación
+  </button>
+
+  <div class="nav-section-title">EMPRESAS</div>
+  <button class="nav-btn" onclick="showSection('companies-list', this)">
+    <i class="bi bi-building"></i> Listar Empresas
+  </button>
+  <button class="nav-btn" onclick="showSection('companies-id', this)">
+    <i class="bi bi-search"></i> Buscar por ID
+  </button>
+  <button class="nav-btn" onclick="showSection('companies-create', this)">
+    <i class="bi bi-plus-circle"></i> Crear Empresa
+  </button>
+  <button class="nav-btn" onclick="showSection('companies-update', this)">
+    <i class="bi bi-pencil-square"></i> Actualizar
+  </button>
+  <button class="nav-btn" onclick="showSection('companies-delete', this)">
+    <i class="bi bi-trash3"></i> Eliminar
+  </button>
+
+  <div class="nav-section-title">VIDEOJUEGOS</div>
+  <button class="nav-btn" onclick="showSection('games-list', this)">
+    <i class="bi bi-controller"></i> Listar Juegos
+  </button>
+  <button class="nav-btn" onclick="showSection('games-id', this)">
+    <i class="bi bi-search"></i> Buscar por ID
+  </button>
+  <button class="nav-btn" onclick="showSection('games-create', this)">
+    <i class="bi bi-plus-circle"></i> Crear Juego
+  </button>
+  <button class="nav-btn" onclick="showSection('games-update', this)">
+    <i class="bi bi-pencil-square"></i> Actualizar
+  </button>
+  <button class="nav-btn" onclick="showSection('games-delete', this)">
+    <i class="bi bi-trash3"></i> Eliminar
+  </button>
+
+  <div class="sidebar-footer">
+    UPTC · I-2026 · Santiago Munevar
+  </div>
+</div>
+
+<!-- MAIN -->
+<div id="main">
+  <div class="topbar">
+    <span class="page-title" id="pageTitle">Autenticación</span>
+    <span id="pageBadge" class="badge-method status-badge method-post">POST</span>
+    <span id="pageUrl" style="color:var(--text-dim);font-size:11px;">/token</span>
+  </div>
+
+  <div class="content">
+
+    <!-- SERVER CONFIG -->
+    <div class="server-config-card">
+      <i class="bi bi-hdd-network" style="color:var(--primary);font-size:18px;"></i>
+      <div>
+        <label>BASE URL</label>
+        <input type="text" id="baseUrl" class="form-control mt-1"
+               value="http://localhost:3000"
+               placeholder="https://tu-api.onrender.com"
+               style="width:320px;display:inline-block;"/>
+      </div>
+      <button class="btn-execute" style="padding:8px 18px;" onclick="pingServer()">
+        <i class="bi bi-activity"></i> PING
+      </button>
+      <span id="serverStatus" class="server-status" style="display:none;"></span>
+    </div>
+
+    <!-- ══════════ AUTH ══════════ -->
+    <div class="section active" id="section-auth">
+      <div class="section-subtitle">AUTENTICACIÓN JWT</div>
+
+      <div class="auth-card-grid">
+
+        <!-- GENERAR TOKEN -->
+        <div class="api-card">
+          <div class="card-header-custom">
+            <span class="badge-method status-badge method-post">POST</span>
+            <span style="color:var(--text-dim);font-size:12px;">/auth/login</span>
+            <span style="margin-left:auto;color:var(--text-dim);font-size:10px;">Iniciar Sesión</span>
+          </div>
+          <div class="card-body-custom">
+            <p style="color:var(--text-dim);font-size:11px;margin-bottom:12px;line-height:1.6;">
+              Envía tu <b style="color:var(--text)">email</b> y <b style="color:var(--text)">password</b> para obtener un JWT válido.
+            </p>
+            <div class="row g-3">
+              <div class="col-6">
+                <label class="form-label">Correo Electrónico</label>
+                <input type="email" id="authEmail" class="form-control" placeholder="correo@gmail.com"/>
+              </div>
+              <div class="col-6">
+                <label class="form-label">Contraseña</label>
+                <input type="password" id="authPassword" class="form-control" placeholder="••••••"/>
+              </div>
+            </div>
+            <div class="d-flex gap-2 mt-3">
+              <button class="btn-execute" onclick="doLogin()">
+                <i class="bi bi-key-fill"></i> INICIAR SESIÓN
+              </button>
+              <button class="btn-clear" onclick="clearResponse('authResp')"><i class="bi bi-x"></i> Limpiar</button>
+            </div>
+            <div id="tokenPreview" class="token-preview"></div>
+            <div id="authResp" class="response-panel" style="display:none;"></div>
+          </div>
+        </div>
+        
+        <div class="api-card mt-3">
+          <div class="card-header-custom">
+            <span class="badge-method status-badge method-post">POST</span>
+            <span style="color:var(--text-dim);font-size:12px;">/auth/register</span>
+            <span style="margin-left:auto;color:var(--text-dim);font-size:10px;">Registro</span>
+          </div>
+          <div class="card-body-custom">
+            <p style="color:var(--text-dim);font-size:11px;margin-bottom:12px;line-height:1.6;">
+              Crea una nueva cuenta proporcionando un <b style="color:var(--text)">nombre</b>, <b style="color:var(--text)">email</b> y <b style="color:var(--text)">password</b>.
+            </p>
+            <div class="row g-3">
+              <div class="col-4">
+                <input type="text" id="regName" class="form-control" placeholder="Nombre"/>
+              </div>
+              <div class="col-4">
+                <input type="email" id="regEmail" class="form-control" placeholder="Correo"/>
+              </div>
+              <div class="col-4">
+                <input type="password" id="regPassword" class="form-control" placeholder="Password"/>
+              </div>
+            </div>
+
+            <div class="d-flex gap-2 mt-3">
+              <button class="btn-execute" onclick="doRegister()">
+                REGISTRAR
+              </button>
+            </div>
+
+            <div id="registerResp" class="response-panel" style="display:none;"></div>
+          </div>
+        </div>
+
+        <!-- VERIFICAR TOKEN -->
+        <!-- <div class="api-card">
+          <div class="card-header-custom">
+            <span class="badge-method status-badge method-get">GET</span>
+            <span style="color:var(--text-dim);font-size:12px;">/private</span>
+            <span style="margin-left:auto;color:var(--text-dim);font-size:10px;">Verificar Token</span>
+          </div>
+          <div class="card-body-custom">
+            <p style="color:var(--text-dim);font-size:11px;margin-bottom:12px;line-height:1.6;">
+              Comprueba que el token almacenado es válido accediendo a la ruta protegida <b style="color:var(--text)">/private</b>.
+            </p>
+            <div class="info-row" id="tokenInfoRow" style="display:none;">
+              <div class="info-pill"><i class="bi bi-person-fill"></i> <b id="tokenInfoName">—</b></div>
+              <div class="info-pill"><i class="bi bi-hash"></i> sub: <b id="tokenInfoSub">—</b></div>
+            </div>
+            <div class="d-flex gap-2 mt-3">
+              <button class="btn-execute" onclick="doVerifyToken()">
+                <i class="bi bi-shield-check"></i> VERIFICAR
+              </button>
+              <button class="btn-clear" onclick="clearResponse('verifyResp')"><i class="bi bi-x"></i> Limpiar</button>
+            </div>
+            <div id="verifyResp" class="response-panel" style="display:none;"></div>
+          </div>
+        </div> -->
+
+      </div><!-- /auth-card-grid -->
+
+      <!-- RUTA PÚBLICA -->
+      <!-- <div class="api-card mt-0">
+        <div class="card-header-custom">
+          <span class="badge-method status-badge method-get">GET</span>
+          <span style="color:var(--text-dim);font-size:12px;">/public</span>
+          <span style="margin-left:auto;color:var(--text-dim);font-size:10px;">Ruta pública (sin token)</span>
+        </div>
+        <div class="card-body-custom" style="padding:14px 18px;">
+          <div class="d-flex gap-2">
+            <button class="btn-execute" onclick="doPublicRoute()">
+              <i class="bi bi-globe"></i> ACCEDER
+            </button>
+            <button class="btn-clear" onclick="clearResponse('publicResp')"><i class="bi bi-x"></i> Limpiar</button>
+          </div>
+          <div id="publicResp" class="response-panel" style="display:none;"></div>
+        </div>
+      </div> -->
+    </div> 
+
+    <!-- ══════════ COMPANIES LIST ══════════ -->
+    <div class="section" id="section-companies-list">
+      <div class="section-subtitle">EMPRESAS — LISTAR TODAS</div>
+      <div class="url-display"><span class="method-tag" style="color:var(--primary)">GET</span>/api/companies</div>
+      <div class="d-flex gap-2 mb-3">
+        <button class="btn-execute" onclick="doGetCompanies()">
+          <i class="bi bi-arrow-clockwise"></i> CARGAR
+        </button>
+        <button class="btn-clear" onclick="clearTable('companiesTable','companiesListResp')">
+          <i class="bi bi-x"></i> Limpiar
+        </button>
+      </div>
+      <div id="companiesTable"></div>
+      <div id="companiesListResp" class="response-panel" style="display:none;"></div>
+    </div>
+
+    <!-- ══════════ COMPANIES BY ID ══════════ -->
+    <div class="section" id="section-companies-id">
+      <div class="section-subtitle">EMPRESAS — BUSCAR POR ID</div>
+      <div class="url-display"><span class="method-tag" style="color:var(--primary)">GET</span>/api/companies/:id</div>
+      <div class="api-card">
+        <div class="card-body-custom">
+          <label class="form-label">ID DE EMPRESA (ObjectId de MongoDB)</label>
+          <input type="text" id="companyIdGet" class="form-control mb-3" placeholder="64f7a1b2c3d4e5f6a7b8c9d0"/>
+          <div class="d-flex gap-2">
+            <button class="btn-execute" onclick="doGetCompanyById()">
+              <i class="bi bi-search"></i> BUSCAR
+            </button>
+            <button class="btn-clear" onclick="clearResponse('companyByIdResp')"><i class="bi bi-x"></i> Limpiar</button>
+          </div>
+          <div id="companyByIdResp" class="response-panel" style="display:none;"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════ COMPANIES CREATE ══════════ -->
+    <div class="section" id="section-companies-create">
+      <div class="section-subtitle">EMPRESAS — CREAR NUEVA</div>
+      <div class="url-display"><span class="method-tag" style="color:#7fff00">POST</span>/api/companies</div>
+      <div class="api-card">
+        <div class="card-body-custom">
+          <div class="row g-3">
+            <div class="col-md-4">
+              <label class="form-label">ID <span style="color:var(--accent)">*</span> (número único)</label>
+              <input type="number" id="cId" class="form-control" placeholder="Ej: 5"/>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">NOMBRE <span style="color:var(--accent)">*</span></label>
+              <input type="text" id="cName" class="form-control" placeholder="Ej: Nintendo Co."/>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">PAÍS <span style="color:var(--accent)">*</span></label>
+              <input type="text" id="cCountry" class="form-control" placeholder="Ej: Japón"/>
+            </div>
+          </div>
+          <p style="color:var(--text-dim);font-size:10px;margin-top:10px;">
+            <i class="bi bi-info-circle"></i> Campos requeridos por el modelo: <b style="color:var(--text)">id</b>, <b style="color:var(--text)">name</b>, <b style="color:var(--text)">country</b>
+          </p>
+          <div class="d-flex gap-2 mt-2">
+            <button class="btn-execute" onclick="doCreateCompany()">
+              <i class="bi bi-save-fill"></i> CREAR
+            </button>
+            <button class="btn-clear" onclick="clearCompanyForm()"><i class="bi bi-x"></i> Limpiar</button>
+          </div>
+          <div id="companyCreateResp" class="response-panel" style="display:none;"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════ COMPANIES UPDATE ══════════ -->
+    <div class="section" id="section-companies-update">
+      <div class="section-subtitle">EMPRESAS — ACTUALIZAR</div>
+      <div class="url-display"><span class="method-tag" style="color:#ffaa00">PUT</span>/api/companies/:id</div>
+      <div class="api-card">
+        <div class="card-body-custom">
+          <div class="row g-3">
+            <div class="col-12">
+              <label class="form-label">ID DE EMPRESA (ObjectId de MongoDB) <span style="color:var(--accent)">*</span></label>
+              <input type="text" id="cUpdateId" class="form-control" placeholder="64f7a1b2c3d4e5f6a7b8c9d0"/>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">NUEVO NOMBRE</label>
+              <input type="text" id="cUpdateName" class="form-control" placeholder="Dejar vacío para no cambiar"/>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">NUEVO PAÍS</label>
+              <input type="text" id="cUpdateCountry" class="form-control" placeholder="Dejar vacío para no cambiar"/>
+            </div>
+          </div>
+          <div class="d-flex gap-2 mt-3">
+            <button class="btn-execute" onclick="doUpdateCompany()">
+              <i class="bi bi-pencil-fill"></i> ACTUALIZAR
+            </button>
+          </div>
+          <div id="companyUpdateResp" class="response-panel" style="display:none;"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════ COMPANIES DELETE ══════════ -->
+    <div class="section" id="section-companies-delete">
+      <div class="section-subtitle">EMPRESAS — ELIMINAR</div>
+      <div class="url-display"><span class="method-tag" style="color:var(--accent)">DELETE</span>/api/companies/:id</div>
+      <div class="api-card">
+        <div class="card-body-custom">
+          <label class="form-label">ID DE EMPRESA (ObjectId de MongoDB) <span style="color:var(--accent)">*</span></label>
+          <input type="text" id="cDeleteId" class="form-control mb-3" placeholder="64f7a1b2c3d4e5f6a7b8c9d0"/>
+          <div class="warn-box">
+            <i class="bi bi-exclamation-triangle-fill"></i>
+            <span>Esta acción es <b>irreversible</b>. Los juegos asociados quedarán huérfanos en la base de datos.</span>
+          </div>
+          <div class="d-flex gap-2">
+            <button class="btn-execute danger" onclick="doDeleteCompany()">
+              <i class="bi bi-trash3-fill"></i> ELIMINAR
+            </button>
+          </div>
+          <div id="companyDeleteResp" class="response-panel" style="display:none;"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════ GAMES LIST ══════════ -->
+    <div class="section" id="section-games-list">
+      <div class="section-subtitle">VIDEOJUEGOS — LISTAR TODOS</div>
+      <div class="url-display"><span class="method-tag" style="color:var(--primary)">GET</span>/api/games</div>
+      <div class="d-flex gap-2 mb-3">
+        <button class="btn-execute" onclick="doGetGames()">
+          <i class="bi bi-arrow-clockwise"></i> CARGAR
+        </button>
+        <button class="btn-clear" onclick="clearTable('gamesTable','gamesListResp')">
+          <i class="bi bi-x"></i> Limpiar
+        </button>
+      </div>
+      <div id="gamesTable"></div>
+      <div id="gamesListResp" class="response-panel" style="display:none;"></div>
+    </div>
+
+    <!-- ══════════ GAMES BY ID ══════════ -->
+    <div class="section" id="section-games-id">
+      <div class="section-subtitle">VIDEOJUEGOS — BUSCAR POR ID</div>
+      <div class="url-display"><span class="method-tag" style="color:var(--primary)">GET</span>/api/games/:id</div>
+      <div class="api-card">
+        <div class="card-body-custom">
+          <label class="form-label">ID DEL JUEGO (ObjectId de MongoDB)</label>
+          <input type="text" id="gameIdGet" class="form-control mb-3" placeholder="64f7a1b2c3d4e5f6a7b8c9d0"/>
+          <div class="d-flex gap-2">
+            <button class="btn-execute" onclick="doGetGameById()">
+              <i class="bi bi-search"></i> BUSCAR
+            </button>
+            <button class="btn-clear" onclick="clearResponse('gameByIdResp')"><i class="bi bi-x"></i> Limpiar</button>
+          </div>
+          <div id="gameByIdResp" class="response-panel" style="display:none;"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════ GAMES CREATE ══════════ -->
+    <div class="section" id="section-games-create">
+      <div class="section-subtitle">VIDEOJUEGOS — CREAR NUEVO</div>
+      <div class="url-display"><span class="method-tag" style="color:#7fff00">POST</span>/api/games</div>
+      <div class="api-card">
+        <div class="card-body-custom">
+          <div class="row g-3">
+            <div class="col-md-3">
+              <label class="form-label">ID <span style="color:var(--accent)">*</span> (número único)</label>
+              <input type="number" id="gId" class="form-control" placeholder="Ej: 10"/>
+            </div>
+            <div class="col-md-5">
+              <label class="form-label">TÍTULO (name) <span style="color:var(--accent)">*</span></label>
+              <input type="text" id="gTitle" class="form-control" placeholder="Ej: The Legend of Zelda"/>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">GÉNERO <span style="color:var(--accent)">*</span></label>
+              <select id="gGenre" class="form-select">
+                <option value="">— Seleccionar —</option>
+                <option>Acción</option><option>Aventura</option><option>RPG</option>
+                <option>Estrategia</option><option>Deportes</option><option>Plataformas</option>
+                <option>Shooter</option><option>Simulación</option><option>Puzzle</option>
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">PRECIO (price) <span style="color:var(--accent)">*</span></label>
+              <input type="number" id="gPrice" class="form-control" step="0.01" placeholder="Ej: 59.99"/>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">ID EMPRESA (company — ObjectId) <span style="color:var(--accent)">*</span></label>
+              <select id="gCompanyId" class="form-select">
+                <option value="">— Seleccionar empresa —</option>
+              </select>
+            </div>
+          </div>
+          <p style="color:var(--text-dim);font-size:10px;margin-top:10px;">
+            <i class="bi bi-info-circle"></i> Campos requeridos: <b style="color:var(--text)">id</b>, <b style="color:var(--text)">name</b>, <b style="color:var(--text)">genre</b>, <b style="color:var(--text)">price</b>, <b style="color:var(--text)">company</b> (ObjectId de empresa existente)
+          </p>
+          <div class="d-flex gap-2 mt-2">
+            <button class="btn-execute" onclick="doCreateGame()">
+              <i class="bi bi-save-fill"></i> CREAR
+            </button>
+            <button class="btn-clear" onclick="clearGameForm()"><i class="bi bi-x"></i> Limpiar</button>
+          </div>
+          <div id="gameCreateResp" class="response-panel" style="display:none;"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════ GAMES UPDATE ══════════ -->
+    <div class="section" id="section-games-update">
+      <div class="section-subtitle">VIDEOJUEGOS — ACTUALIZAR</div>
+      <div class="url-display"><span class="method-tag" style="color:#ffaa00">PUT</span>/api/games/:id</div>
+      <div class="api-card">
+        <div class="card-body-custom">
+          <div class="row g-3">
+            <div class="col-12">
+              <label class="form-label">ID DEL JUEGO (ObjectId de MongoDB) <span style="color:var(--accent)">*</span></label>
+              <input type="text" id="gUpdateId" class="form-control" placeholder="64f7a1b2c3d4e5f6a7b8c9d0"/>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">TÍTULO (name)</label>
+              <input type="text" id="gUpdateName" class="form-control" placeholder="Dejar vacío para no cambiar"/>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">GÉNERO <span style="color:var(--accent)">*</span></label>
+              <select id="gGenre" class="form-select">
+                <option value="">— Seleccionar —</option>
+                <option>Acción</option><option>Aventura</option><option>RPG</option>
+                <option>Estrategia</option><option>Deportes</option><option>Plataformas</option>
+                <option>Shooter</option><option>Simulación</option><option>Puzzle</option>
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">PRECIO (price)</label>
+              <input type="number" id="gUpdatePrice" class="form-control" step="0.01" placeholder="Dejar vacío para no cambiar"/>
+            </div>
+          </div>
+          <div class="d-flex gap-2 mt-3">
+            <button class="btn-execute" onclick="doUpdateGame()">
+              <i class="bi bi-pencil-fill"></i> ACTUALIZAR
+            </button>
+          </div>
+          <div id="gameUpdateResp" class="response-panel" style="display:none;"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════ GAMES DELETE ══════════ -->
+    <div class="section" id="section-games-delete">
+      <div class="section-subtitle">VIDEOJUEGOS — ELIMINAR</div>
+      <div class="url-display"><span class="method-tag" style="color:var(--accent)">DELETE</span>/api/games/:id</div>
+      <div class="api-card">
+        <div class="card-body-custom">
+          <label class="form-label">ID DEL JUEGO (ObjectId de MongoDB) <span style="color:var(--accent)">*</span></label>
+          <input type="text" id="gDeleteId" class="form-control mb-3" placeholder="64f7a1b2c3d4e5f6a7b8c9d0"/>
+          <div class="d-flex gap-2">
+            <button class="btn-execute danger" onclick="doDeleteGame()">
+              <i class="bi bi-trash3-fill"></i> ELIMINAR
+            </button>
+          </div>
+          <div id="gameDeleteResp" class="response-panel" style="display:none;"></div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /content -->
+</div><!-- /main -->
+
+<div class="toast-area" id="toastArea"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+/* ═══════════════════════════════════════
+   UTILIDADES BASE
+═══════════════════════════════════════ */
+const getBase = () => document.getElementById('baseUrl').value.replace(/\/$/, '')
+let jwtToken = ''
+
+function updateTokenStatus() {
+  jwtToken = document.getElementById('jwtInput').value.trim()
+  const dot = document.getElementById('dotIndicator')
+  const lbl = document.getElementById('tokenLabel')
+  if (jwtToken) {
+    dot.classList.add('active')
+    lbl.textContent = 'Token activo ✓'
+    lbl.style.color = 'var(--primary)'
+  } else {
+    dot.classList.remove('active')
+    lbl.textContent = 'Sin autenticar'
+    lbl.style.color = 'var(--text-dim)'
+  }
+}
+
+function clearToken() {
+  document.getElementById('jwtInput').value = ''
+  jwtToken = ''
+  updateTokenStatus()
+}
+
+async function apiFetch(method, path, body = null, skipAuth = false) {
+  const headers = { 'Content-Type': 'application/json' }
+  if (!skipAuth && jwtToken) {
+    headers['Authorization'] = `Bearer ${jwtToken}`
+  }
+  const opts = { method, headers }
+  if (body) opts.body = JSON.stringify(body)
+  const t0 = Date.now()
+  try {
+    const res = await fetch(getBase() + path, opts)
+    const elapsed = Date.now() - t0
+    let data
+    const text = await res.text()
+    try { data = JSON.parse(text) } catch { data = { raw: text } }
+    return { ok: res.ok, status: res.status, data, elapsed }
+  } catch (err) {
+    return { ok: false, status: 0, data: { error: err.message }, elapsed: Date.now() - t0 }
+  }
+}
+
+/* ═══════════════════════════════════════
+   RENDER RESPUESTA JSON CON HIGHLIGHT
+═══════════════════════════════════════ */
+function syntaxHL(json) {
+  return JSON.stringify(json, null, 2)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g, m => {
+      let cls = 'json-num'
+      if (/^"/.test(m)) cls = /:$/.test(m) ? 'json-key' : 'json-str'
+      else if (/true|false/.test(m)) cls = 'json-bool'
+      else if (/null/.test(m)) cls = 'json-null'
+      return `<span class="${cls}">${m}</span>`
+    })
+}
+
+function showResp(elId, result) {
+  const el = document.getElementById(elId)
+  el.style.display = 'block'
+  const statusClass = result.status === 0 ? 'status-err'
+    : result.status < 300 ? 'status-2xx' : 'status-4xx'
+  const statusLabel = result.status === 0 ? 'ERROR DE RED' : result.status
+  el.innerHTML = `
+    <div class="resp-meta">
+      <span class="status-badge ${statusClass}">${statusLabel}</span>
+      <span class="resp-time"><i class="bi bi-clock"></i> ${result.elapsed}ms</span>
+      ${result.ok ? '<span style="color:var(--primary);font-size:10px;"><i class="bi bi-check-circle-fill"></i> OK</span>' : '<span style="color:var(--accent);font-size:10px;"><i class="bi bi-x-circle-fill"></i> Error</span>'}
+    </div>
+    <pre class="response-body">${syntaxHL(result.data)}</pre>
+  `
+}
+
+function clearResponse(id) {
+  const el = document.getElementById(id)
+  el.style.display = 'none'
+  el.innerHTML = ''
+}
+
+function clearTable(tableId, respId) {
+  document.getElementById(tableId).innerHTML = ''
+  clearResponse(respId)
+}
+
+function toast(msg, err = false, icon = '') {
+  const area = document.getElementById('toastArea')
+  const t = document.createElement('div')
+  t.className = 'toast-item' + (err ? ' err' : '')
+  t.innerHTML = `<i class="bi ${icon || (err ? 'bi-x-circle-fill' : 'bi-check-circle-fill')}"></i> ${msg}`
+  area.appendChild(t)
+  setTimeout(() => t.remove(), 3500)
+}
+
+/* ═══════════════════════════════════════
+   TABLA DE EMPRESAS
+═══════════════════════════════════════ */
+function renderCompaniesTable(data) {
+  if (!data || !data.length) {
+    return `<div class="api-card">
+      <div class="empty-state">
+        <i class="bi bi-building-slash"></i>
+        No hay empresas registradas
+      </div>
+    </div>`;
+  }
+
+  let rows = data.map(c => `
+    <tr>
+      <td>
+        <span class="id-chip" title="Click para copiar"
+          onclick="copyToClip('${c._id}')">
+          ${c._id}
+        </span>
+      </td>
+
+      <td><b>${c.id ?? '—'}</b></td>
+
+      <td style="color:#fff;font-weight:600;">
+        ${c.name ?? '—'}
+      </td>
+
+      <td>
+        ${c.country ?? '—'}
+      </td>
+
+      <!-- 🔥 JUEGOS CON BOTÓN -->
+      <td>
+        <span style="background:var(--surface2);border:1px solid var(--border);border-radius:20px;padding:2px 10px;font-size:10px;color:var(--primary);">
+          ${Array.isArray(c.games) ? c.games.length : 0} juegos
+        </span>
+
+        <button
+          onclick="toggleGames('${c._id}')"
+          style="margin-left:6px;font-size:10px;">
+          👁️ Ver
+        </button>
+
+        <!-- contenedor oculto -->
+        <div id="games-${c._id}"
+          style="display:none;margin-top:6px;color:#fff;font-size:11px;">
+        </div>
+      </td>
+    </tr>
+  `).join('');
+
+  return `
+    <div class="api-card" style="overflow:hidden;">
+      <div class="card-header-custom" style="justify-content:space-between;">
+        <span style="color:#fff;font-family:var(--font-display);font-weight:700;">
+          Empresas
+        </span>
+        <span style="color:var(--text-dim);font-size:11px;">
+          ${data.length} registro${data.length !== 1 ? 's' : ''}
+        </span>
+      </div>
+
+      <div style="overflow-x:auto;">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>_id (MongoDB)</th>
+              <th>id</th>
+              <th>Nombre</th>
+              <th>País</th>
+              <th>Juegos</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rows}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  `;
+}
+
+function renderGamesTable(data) {
+  if (!data || !data.length) {
+    return `
+      <div class="api-card">
+        <div class="empty-state">
+          🎮 No hay juegos registrados
+        </div>
+      </div>
+    `;
+  }
+
+  let rows = data.map(g => `
+    <tr>
+      <td>
+        <span class="id-chip" title="Click para copiar"
+          onclick="copyToClip('${g._id}')">
+          ${g._id}
+        </span>
+      </td>
+
+      <td style="color:#fff;font-weight:600;">
+        ${g.name ?? '—'}
+      </td>
+
+      <td>
+        ${g.genre ?? '—'}
+      </td>
+
+      <td>
+        $${g.price ?? '—'}
+      </td>
+    </tr>
+  `).join('');
+
+  return `
+    <div class="api-card" style="overflow:hidden;">
+      <div class="card-header-custom" style="justify-content:space-between;">
+        <span style="color:#fff;font-weight:700;">Juegos</span>
+        <span style="color:var(--text-dim);font-size:11px;">
+          ${data.length} registro(s)
+        </span>
+      </div>
+
+      <div style="overflow-x:auto;">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Nombre</th>
+              <th>Género</th>
+              <th>Precio</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            ${rows}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  `;
+}
+
+function toggleGames(companyId) {
+  const container = document.getElementById(`games-${companyId}`);
+  if (!container) return;
+
+  const companies = window.lastCompanies || [];
+
+  const company = companies.find(
+    c => String(c._id) === String(companyId)
+  );
+
+  const games = company?.games ?? [];
+
+  if (container.style.display === 'none' || container.style.display === '') {
+    container.style.display = 'block';
+
+    if (games.length === 0) {
+      container.innerHTML = '<small>No hay juegos</small>';
+      return;
+    }
+
+    container.innerHTML = games.map(g => `
+      <div style="padding:3px 0;">
+        🎮 ${g.name} - ${g.genre} - $${g.price}
+      </div>
+    `).join('');
+
+  } else {
+    container.style.display = 'none';
+  }
+}
+
+/* ═══════════════════════════════════════
+   TABLA DE JUEGOS
+═══════════════════════════════════════ */
+function renderCompaniesTable(data) {
+  if (!data || !data.length) {
+    return `
+      <div class="api-card">
+        <div class="empty-state">
+          <i class="bi bi-building-slash"></i>
+          No hay empresas registradas
+        </div>
+      </div>
+    `;
+  }
+
+  let rows = data.map(c => `
+    <tr>
+      <td>
+        <span class="id-chip" onclick="copyToClip('${c._id}')">
+          ${c._id}
+        </span>
+      </td>
+
+      <td><b>${c.id ?? '—'}</b></td>
+
+      <td style="color:#fff;font-weight:600;">
+        ${c.name ?? '—'}
+      </td>
+
+      <td>${c.country ?? '—'}</td>
+
+      <td>
+        <span style="background:var(--surface2);border:1px solid var(--border);border-radius:20px;padding:2px 10px;font-size:10px;color:var(--primary);">
+          ${Array.isArray(c.games) ? c.games.length : 0} juegos
+        </span>
+
+        <button
+          onclick="toggleGames('${c._id}')"
+          style="margin-left:6px;font-size:10px;">
+          👁️ Ver
+        </button>
+
+        <div
+          id="games-${c._id}"
+          style="display:none;margin-top:6px;font-size:11px;color:#fff;">
+        </div>
+      </td>
+    </tr>
+  `).join('');
+
+  return `
+    <div class="api-card" style="overflow:hidden;">
+      <div class="card-header-custom" style="justify-content:space-between;">
+        <span style="color:#fff;font-weight:700;">Empresas</span>
+        <span style="color:var(--text-dim);font-size:11px;">
+          ${data.length} registro(s)
+        </span>
+      </div>
+
+      <div style="overflow-x:auto;">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>id</th>
+              <th>Nombre</th>
+              <th>País</th>
+              <th>Juegos</th>
+            </tr>
+          </thead>
+
+          <tbody>${rows}</tbody>
+        </table>
+      </div>
+    </div>
+  `;
+}
+
+/* ═══════════════════════════════════════
+   DETALLE EMPRESA
+═══════════════════════════════════════ */
+function renderCompanyDetail(c) {
+  const games = Array.isArray(c.games) && c.games.length
+    ? c.games.map(g => {
+        const name = typeof g === 'object' ? (g.name ?? g._id) : g
+        return `<span class="genre-tag" style="margin:2px;">${name}</span>`
+      }).join('')
+    : '<span style="color:var(--text-dim);font-size:11px;">Sin juegos asociados</span>'
+
+  return `
+    <div class="api-card mt-3" style="overflow:hidden;">
+      <div class="card-header-custom">
+        <i class="bi bi-building" style="color:var(--primary);font-size:18px;"></i>
+        <span style="color:#fff;font-family:var(--font-display);font-weight:700;font-size:16px;">${c.name}</span>
+        <span class="id-chip" style="margin-left:auto;" onclick="copyToClip('${c._id}')">${c._id}</span>
+      </div>
+      <div class="card-body-custom">
+        <div class="row g-3">
+          <div class="col-md-4">
+            <div style="color:var(--text-dim);font-size:10px;letter-spacing:1px;margin-bottom:4px;">ID INTERNO</div>
+            <div style="color:var(--primary);font-weight:700;font-size:20px;">${c.id ?? '—'}</div>
+          </div>
+          <div class="col-md-4">
+            <div style="color:var(--text-dim);font-size:10px;letter-spacing:1px;margin-bottom:4px;">PAÍS</div>
+            <div style="color:#fff;font-size:15px;">${c.country ?? '—'}</div>
+          </div>
+          <div class="col-md-4">
+            <div style="color:var(--text-dim);font-size:10px;letter-spacing:1px;margin-bottom:4px;">JUEGOS</div>
+            <div style="color:var(--primary);font-weight:700;font-size:20px;">${Array.isArray(c.games) ? c.games.length : 0}</div>
+          </div>
+        </div>
+        <div style="margin-top:16px;">
+          <div style="color:var(--text-dim);font-size:10px;letter-spacing:1px;margin-bottom:8px;">JUEGOS ASOCIADOS</div>
+          <div>${games}</div>
+        </div>
+      </div>
+    </div>
+  `
+}
+
+/* ═══════════════════════════════════════
+   DETALLE JUEGO
+═══════════════════════════════════════ */
+function renderGameDetail(g) {
+  const compName = typeof g.company === 'object' ? g.company.name : (g.company ?? '—')
+  return `
+    <div class="api-card mt-3" style="overflow:hidden;">
+      <div class="card-header-custom">
+        <i class="bi bi-controller" style="color:var(--primary);font-size:18px;"></i>
+        <span style="color:#fff;font-family:var(--font-display);font-weight:700;font-size:16px;">${g.name}</span>
+        <span class="id-chip" style="margin-left:auto;" onclick="copyToClip('${g._id}')">${g._id}</span>
+      </div>
+      <div class="card-body-custom">
+        <div class="row g-3">
+          <div class="col-md-3">
+            <div style="color:var(--text-dim);font-size:10px;letter-spacing:1px;margin-bottom:4px;">ID INTERNO</div>
+            <div style="color:var(--primary);font-weight:700;font-size:20px;">${g.id ?? '—'}</div>
+          </div>
+          <div class="col-md-3">
+            <div style="color:var(--text-dim);font-size:10px;letter-spacing:1px;margin-bottom:4px;">GÉNERO</div>
+            <span class="genre-tag" style="font-size:12px;">${g.genre ?? '—'}</span>
+          </div>
+          <div class="col-md-3">
+            <div style="color:var(--text-dim);font-size:10px;letter-spacing:1px;margin-bottom:4px;">PRECIO</div>
+            <div style="color:var(--primary);font-weight:700;font-size:20px;">$${g.price?.toFixed ? g.price.toFixed(2) : (g.price ?? '—')}</div>
+          </div>
+          <div class="col-md-3">
+            <div style="color:var(--text-dim);font-size:10px;letter-spacing:1px;margin-bottom:4px;">EMPRESA</div>
+            <div style="color:#fff;">${compName}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  `
+}
+
+/* ═══════════════════════════════════════
+   COPIAR AL PORTAPAPELES
+═══════════════════════════════════════ */
+function copyToClip(text) {
+  navigator.clipboard.writeText(text).then(() => toast('ID copiado al portapapeles', false, 'bi-clipboard-check'))
+}
+
+/* ═══════════════════════════════════════
+   PING
+═══════════════════════════════════════ */
+async function pingServer() {
+  const s = document.getElementById('serverStatus')
+  s.style.display = 'inline'
+  s.textContent = 'Conectando…'
+  s.className = 'server-status'
+  const result = await apiFetch('GET', '/')
+  if (result.status > 0) {
+    s.textContent = `✓ Servidor OK (${result.elapsed}ms)`
+    s.className = 'server-status ok'
+    toast('Servidor respondió correctamente', false, 'bi-wifi')
+  } else {
+    s.textContent = '✗ Sin conexión'
+    s.className = 'server-status fail'
+    toast('No se pudo conectar al servidor', true)
+  }
+}
+
+/* ═══════════════════════════════════════
+   AUTH
+═══════════════════════════════════════ */
+async function doLogin() {
+  const email = document.getElementById('authEmail').value.trim();
+  const password = document.getElementById('authPassword').value.trim();
+
+  if (!email || !password) {
+    toast('Completa email y password', true);
+    return;
+  }
+
+  try {
+    const result = await apiFetch('POST', '/auth/login', { email, password }, true);
+
+    showResp('authResp', result);
+
+    const token = result?.data?.token;
+
+    if (result.ok && token) {
+
+      jwtToken = token;
+      localStorage.setItem('token', token);
+
+      const jwtInput = document.getElementById('jwtInput');
+      if (jwtInput) jwtInput.value = token;
+
+      if (typeof updateTokenStatus === 'function') {
+        updateTokenStatus();
+      }
+
+      toast('Login exitoso ✓');
+
+      await loadCompanies();
+
+    } else {
+      toast('Credenciales inválidas', true);
+      console.error('Login error response:', result);
+    }
+
+  } catch (err) {
+    console.error('Error en login:', err);
+    toast('Error de conexión con el servidor', true);
+  }
+}
+
+async function doRegister() {
+  const name = document.getElementById('regName').value.trim()
+  const email = document.getElementById('regEmail').value.trim()
+  const password = document.getElementById('regPassword').value.trim()
+
+  if (!name || !email || !password) {
+    toast('Completa todos los campos', true)
+    return
+  }
+
+  const result = await apiFetch('POST', '/auth/register', { name, email, password }, true)
+  showResp('registerResp', result)
+
+  if (result.ok) {
+    toast('Usuario registrado ✓')
+  } else {
+    toast('Error al registrar', true)
+  }
+}
+
+async function doVerifyToken() {
+  if (!jwtToken) { toast('No hay token activo', true); return }
+  const result = await apiFetch('GET', '/private')
+  showResp('verifyResp', result)
+  if (result.ok) toast('Token válido ✓', false, 'bi-shield-check')
+  else toast('Token inválido o expirado', true)
+}
+
+async function doPublicRoute() {
+  const result = await apiFetch('GET', '/public', null, true)
+  showResp('publicResp', result)
+}
+
+/* ═══════════════════════════════════════
+   EMPRESAS
+═══════════════════════════════════════ */
+async function doGetCompanies() {
+  const result = await apiFetch('GET', '/api/companies');
+
+  if (result.ok && result.data.data) {
+
+    window.lastCompanies = result.data.data;
+
+    document.getElementById('companiesTable').innerHTML =
+      renderCompaniesTable(result.data.data);
+
+    clearResponse('companiesListResp');
+
+  } else {
+    showResp('companiesListResp', result);
+    document.getElementById('companiesTable').innerHTML = '';
+  }
+
+  if (!result.ok) {
+    toast('Error cargando empresas', true);
+  } else {
+    toast(
+      `${result.data.data?.length ?? 0} empresa(s) cargada(s)`,
+      false,
+      'bi-building'
+    );
+  }
+}
+
+async function doGetCompanyById() {
+  const id = document.getElementById('companyIdGet').value.trim()
+  if (!id) { toast('Ingresa un ID', true); return }
+  const result = await apiFetch('GET', `/api/companies/${id}`)
+  const panel = document.getElementById('companyByIdResp')
+  if (result.ok && result.data.data) {
+    panel.style.display = 'block'
+    panel.innerHTML = renderCompanyDetail(result.data.data)
+  } else {
+    showResp('companyByIdResp', result)
+  }
+}
+
+async function doCreateCompany() {
+  const id = parseInt(document.getElementById('cId').value)
+  const name = document.getElementById('cName').value.trim()
+  const country = document.getElementById('cCountry').value.trim()
+
+  if (!id || !name || !country) { toast('Completa todos los campos requeridos (*)', true); return }
+
+  const body = { id, name, country }
+  const result = await apiFetch('POST', '/api/companies', body)
+  showResp('companyCreateResp', result)
+  if (result.ok) toast('Empresa creada correctamente ✓', false, 'bi-building-add')
+  else toast('Error al crear empresa', true)
+}
+
+async function doUpdateCompany() {
+  const id = document.getElementById('cUpdateId').value.trim()
+  if (!id) { toast('Ingresa el ID de la empresa', true); return }
+
+  const body = {}
+  const name = document.getElementById('cUpdateName').value.trim()
+  const country = document.getElementById('cUpdateCountry').value.trim()
+  if (name) body.name = name
+  if (country) body.country = country
+
+  if (!Object.keys(body).length) { toast('Ingresa al menos un campo a actualizar', true); return }
+
+  const result = await apiFetch('PUT', `/api/companies/${id}`, body)
+  showResp('companyUpdateResp', result)
+  if (result.ok) toast('Empresa actualizada ✓', false, 'bi-pencil-fill')
+  else toast('Error al actualizar empresa', true)
+}
+
+async function doDeleteCompany() {
+  const id = document.getElementById('cDeleteId').value.trim()
+  if (!id) { toast('Ingresa el ID de la empresa', true); return }
+  const result = await apiFetch('DELETE', `/api/companies/${id}`)
+  showResp('companyDeleteResp', result)
+  if (result.ok) toast('Empresa eliminada', false, 'bi-trash3-fill')
+  else toast('Error al eliminar empresa', true)
+}
+
+function clearCompanyForm() {
+  ['cId','cName','cCountry'].forEach(id => document.getElementById(id).value = '')
+  clearResponse('companyCreateResp')
+}
+
+/* ═══════════════════════════════════════
+   JUEGOS
+═══════════════════════════════════════ */
+async function doGetGames() {
+  const result = await apiFetch('GET', '/api/games');
+
+  const container = document.getElementById('gamesTable');
+
+  if (!result.ok) {
+    showResp('gamesListResp', result);
+    container.innerHTML = '';
+    toast('Error cargando juegos', true);
+    return;
+  }
+
+  const games = result.data?.data || [];
+
+  if (!Array.isArray(games) || games.length === 0) {
+    container.innerHTML = `
+      <div class="api-card">
+        <div class="empty-state">
+          🎮 No hay juegos registrados en este momento.<br>
+          Crea uno para empezar a ver la lista.
+        </div>
+      </div>
+    `;
+
+    clearResponse('gamesListResp');
+
+    toast('0 juegos cargados', false, 'bi-controller');
+    return;
+  }
+
+  container.innerHTML = renderGamesTable(games);
+
+  clearResponse('gamesListResp');
+
+  toast(`${games.length} juego(s) cargado(s)`, false, 'bi-controller');
+}
+
+async function doGetGameById() {
+  const id = document.getElementById('gameIdGet').value.trim()
+  if (!id) { toast('Ingresa un ID', true); return }
+  const result = await apiFetch('GET', `/api/games/${id}`)
+  const panel = document.getElementById('gameByIdResp')
+  if (result.ok && result.data.data) {
+    panel.style.display = 'block'
+    panel.innerHTML = renderGameDetail(result.data.data)
+  } else {
+    showResp('gameByIdResp', result)
+  }
+}
+
+async function doCreateGame() {
+  const id = parseInt(document.getElementById('gId').value)
+  const name = document.getElementById('gTitle').value.trim()
+  const genre = document.getElementById('gGenre').value
+  const price = parseFloat(document.getElementById('gPrice').value)
+  const company = document.getElementById('gCompanyId').value.trim()
+
+  if (!id || !name || !genre || isNaN(price) || !company) {
+    toast('Completa todos los campos requeridos (*)', true); return
+  }
+
+  const body = { id, name, genre, price, company }
+  const result = await apiFetch('POST', '/api/games', body)
+  showResp('gameCreateResp', result)
+  if (result.ok) toast('Juego creado correctamente ✓', false, 'bi-controller')
+  else toast('Error al crear juego', true)
+}
+
+async function doUpdateGame() {
+  const id = document.getElementById('gUpdateId').value.trim()
+  if (!id) { toast('Ingresa el ID del juego', true); return }
+
+  const body = {}
+  const name = document.getElementById('gUpdateName').value.trim()
+  const genre = document.getElementById('gGenre').value.trim()
+  const priceVal = document.getElementById('gUpdatePrice').value
+  if (name) body.name = name
+  if (genre) body.genre = genre
+  if (priceVal !== '') body.price = parseFloat(priceVal)
+
+  if (!Object.keys(body).length) { toast('Ingresa al menos un campo a actualizar', true); return }
+
+  const result = await apiFetch('PUT', `/api/games/${id}`, body)
+  showResp('gameUpdateResp', result)
+  if (result.ok) toast('Juego actualizado ✓', false, 'bi-pencil-fill')
+  else toast('Error al actualizar juego', true)
+}
+
+async function doDeleteGame() {
+  const id = document.getElementById('gDeleteId').value.trim()
+  if (!id) { toast('Ingresa el ID del juego', true); return }
+  const result = await apiFetch('DELETE', `/api/games/${id}`)
+  showResp('gameDeleteResp', result)
+  if (result.ok) toast('Juego eliminado', false, 'bi-trash3-fill')
+  else toast('Error al eliminar juego', true)
+}
+
+function clearGameForm() {
+  ['gId','gTitle','gPrice','gCompanyId'].forEach(id => document.getElementById(id).value = '')
+  document.getElementById('gGenre').value = ''
+  clearResponse('gameCreateResp')
+}
+
+/* ═══════════════════════════════════════
+   NAVEGACIÓN
+═══════════════════════════════════════ */
+const sectionMeta = {
+  'auth':             { title: 'Autenticación',    method: 'POST', url: '/token',           cls: 'method-post' },
+  'companies-list':   { title: 'Listar Empresas',  method: 'GET',  url: '/api/companies',   cls: 'method-get'  },
+  'companies-id':     { title: 'Empresa por ID',   method: 'GET',  url: '/api/companies/:id', cls: 'method-get' },
+  'companies-create': { title: 'Crear Empresa',    method: 'POST', url: '/api/companies',   cls: 'method-post' },
+  'companies-update': { title: 'Actualizar Empresa',method:'PUT',  url: '/api/companies/:id','cls':'method-put'},
+  'companies-delete': { title: 'Eliminar Empresa', method:'DELETE',url: '/api/companies/:id','cls':'method-delete'},
+  'games-list':       { title: 'Listar Juegos',    method: 'GET',  url: '/api/games',       cls: 'method-get'  },
+  'games-id':         { title: 'Juego por ID',     method: 'GET',  url: '/api/games/:id',   cls: 'method-get'  },
+  'games-create':     { title: 'Crear Juego',      method: 'POST', url: '/api/games',       cls: 'method-post' },
+  'games-update':     { title: 'Actualizar Juego', method: 'PUT',  url: '/api/games/:id',   cls: 'method-put'  },
+  'games-delete':     { title: 'Eliminar Juego',   method:'DELETE',url: '/api/games/:id',   cls: 'method-delete'},
+}
+
+function showSection(sectionName, el) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'))
+  document.getElementById('section-' + sectionName).classList.add('active')
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'))
+  if (el) el.classList.add('active')
+
+  const meta = sectionMeta[sectionName]
+  if (meta) {
+    document.getElementById('pageTitle').textContent = meta.title
+    document.getElementById('pageUrl').textContent = meta.url
+    const badge = document.getElementById('pageBadge')
+    badge.textContent = meta.method
+    badge.className = `badge-method status-badge ${meta.cls}`
+  }
+}
+
+async function loadCompanies() {
+  try {
+    const token = localStorage.getItem('token');
+
+    if (!token) {
+      console.error('No hay token disponible');
+      return;
+    }
+
+    const res = await fetch('http://localhost:3000/api/companies', {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    });
+
+    const response = await res.json();
+
+    console.log("Respuesta companies:", response);
+
+    if (!res.ok) {
+      throw new Error(response.message || response.error || 'Error API');
+    }
+
+    const companies = response.data;
+
+    if (!Array.isArray(companies)) {
+      console.error("data no es array:", companies);
+      return;
+    }
+
+    const select = document.getElementById('gCompanyId');
+
+    if (!select) {
+      console.error('No existe el select gCompanyId');
+      return;
+    }
+
+    select.innerHTML = '<option value="">— Seleccionar empresa —</option>';
+
+    companies.forEach(c => {
+      const option = document.createElement('option');
+      option.value = c._id;
+      option.textContent = c.name;
+      select.appendChild(option);
+    });
+
+  } catch (err) {
+    console.error('Error cargando empresas:', err);
+  }
+}
+
+</script>
+</body>
+</html>

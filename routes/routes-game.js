@@ -1,6 +1,8 @@
 const express = require('express');
 const routes_game = express.Router();
 
+const verifyToken = require('../middlewares/auth.js');
+
 const {
   getAll,
   save,
@@ -18,7 +20,7 @@ const {
 
 /**
  * @swagger
- * /games:
+ * /api/games:
  *   get:
  *     summary: Lista de juegos
  *     description: Retorna una colección de juegos
@@ -62,11 +64,11 @@ const {
  *       500:
  *         description: Error del servidor
  */
-routes_game.get('/', getAll);
+routes_game.get('/', verifyToken, getAll);
 
 /**
  * @swagger
- * /games/{id}:
+ * /api/games/{id}:
  *   get:
  *     summary: Recuperar un juego por ID
  *     description: Busca un juego específico por su ID
@@ -122,11 +124,11 @@ routes_game.get('/', getAll);
  *       500:
  *         description: Error del servidor
  */
-routes_game.get('/:id', findById);
+routes_game.get('/:id', verifyToken, findById);
 
 /**
  * @swagger
- * /games:
+ * /api/games:
  *   post:
  *     summary: Crear un juego
  *     description: Inserta un nuevo juego en la base de datos
@@ -178,11 +180,11 @@ routes_game.get('/:id', findById);
  *       500:
  *         description: Error del servidor
  */
-routes_game.post('/', save);
+routes_game.post('/', verifyToken, save);
 
 /**
  * @swagger
- * /games/{id}:
+ * /api/games/{id}:
  *   put:
  *     summary: Actualizar un juego
  *     description: Modifica la información de un juego existente
@@ -230,11 +232,11 @@ routes_game.post('/', save);
  *       500:
  *         description: Error del servidor
  */
-routes_game.put('/:id', update);
+routes_game.put('/:id', verifyToken, update);
 
 /**
  * @swagger
- * /games/{id}:
+ * /api/games/{id}:
  *   delete:
  *     summary: Eliminar un juego
  *     description: Elimina un juego de la base de datos
@@ -266,6 +268,6 @@ routes_game.put('/:id', update);
  *       500:
  *         description: Error del servidor
  */
-routes_game.delete('/:id', remove);
+routes_game.delete('/:id', verifyToken, remove);
 
 module.exports = routes_game;

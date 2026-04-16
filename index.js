@@ -1,5 +1,6 @@
 require('dotenv').config()
 
+const path = require('path')
 const express = require('express')
 const jwt = require('jsonwebtoken')
 
@@ -11,6 +12,11 @@ const routes_game = require('./routes/routes-game.js')
 require('./drivers/connect-db.js')
 
 const APP = new express()
+APP.use(cors())
+APP.use(express.json())
+APP.use(express.urlencoded({ extended: false }))
+APP.use(express.static(path.join(__dirname, 'public')))
+
 const verifyToken = require('./middlewares/auth.js')
 const swaggerUI = require('swagger-ui-express')
 const swaggerSpec = require('./swagger')
@@ -18,10 +24,10 @@ const swaggerSpec = require('./swagger')
 const key = process.env.JWT_SECRET
 const PORT = process.env.PORT || 3000
 
+const authRoutes = require('./routes/auth.js')
+APP.use('/auth', authRoutes)
+
 APP.use('/docs', swaggerUI.serve, swaggerUI.setup(swaggerSpec))
-APP.use(cors())
-APP.use(express.json())
-APP.use(express.urlencoded({ extended: false }))
 
 /**
  * @swagger
@@ -98,8 +104,8 @@ APP.get('/private', verifyToken, (req, res) => {
   })
 })
 
-APP.use('/companies', verifyToken, routes_company)
-APP.use('/games', verifyToken, routes_game)
+APP.use('/api/companies',  routes_company)
+APP.use('/api/games',  routes_game)
 APP.use('/', require('./routes/index.js'))
 
 APP.listen(PORT, () => {

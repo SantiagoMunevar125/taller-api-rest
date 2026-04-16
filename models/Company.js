@@ -10,7 +10,8 @@ const CompanySchema = new Schema({
   name: {
     type: String,
     required: true,
-    match: [/^[a-zA-Z\s]+$/]
+    match: [/^[a-zA-Z0-9\s.]+$/],
+    unique: true
   },
   country: {
     type: String,

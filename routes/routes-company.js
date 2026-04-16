@@ -1,6 +1,8 @@
 const express = require('express');
 const routes_company = express.Router();
 
+const verifyToken = require('../middlewares/auth.js');
+
 const {
   getAll,
   save,
@@ -18,7 +20,7 @@ const {
 
 /**
  * @swagger
- * /companies:
+ * /api/companies:
  *   get:
  *     summary: Obtener todas las empresas
  *     description: Retorna una lista de empresas registradas con sus respectivos detalles.
@@ -58,11 +60,11 @@ const {
  *       500:
  *         description: Error interno del servidor
  */
-routes_company.get('/', getAll);
+routes_company.get('/', verifyToken, getAll);
 
 /**
  * @swagger
- * /companies/{id}:
+ * /api/companies/{id}:
  *   get:
  *     summary: Obtener una empresa por ID
  *     description: Busca una empresa específica por su identificador único de MongoDB y realiza un populate de sus juegos.
@@ -120,11 +122,11 @@ routes_company.get('/', getAll);
  *       500:
  *         description: Error del servidor
  */
-routes_company.get('/:id', findById);
+routes_company.get('/:id', verifyToken, findById);
 
 /**
  * @swagger
- * /companies:
+ * /api/companies:
  *   post:
  *     summary: Crear una nueva empresa
  *     description: Inserta una nueva empresa en la base de datos.
@@ -172,11 +174,11 @@ routes_company.get('/:id', findById);
  *       500:
  *         description: Error del servidor
  */
-routes_company.post('/', save);
+routes_company.post('/', verifyToken, save);
 
 /**
  * @swagger
- * /companies/{id}:
+ * /api/companies/{id}:
  *   put:
  *     summary: Actualizar una empresa existente
  *     description: Modifica los datos de una empresa identificada por su ID.
@@ -224,11 +226,11 @@ routes_company.post('/', save);
  *       500:
  *         description: Error del servidor
  */
-routes_company.put('/:id', update);
+routes_company.put('/:id', verifyToken, update);
 
 /**
  * @swagger
- * /companies/{id}:
+ * /api/companies/{id}:
  *   delete:
  *     summary: Eliminar una empresa
  *     description: Elimina de forma permanente una empresa de la base de datos.
@@ -260,6 +262,6 @@ routes_company.put('/:id', update);
  *       500:
  *         description: Error del servidor
  */
-routes_company.delete('/:id', remove);
+routes_company.delete('/:id', verifyToken, remove);
 
 module.exports = routes_company;
