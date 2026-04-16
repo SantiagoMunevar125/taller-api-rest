@@ -471,7 +471,7 @@
       <div>
         <label>BASE URL</label>
         <input type="text" id="baseUrl" class="form-control mt-1"
-               value="http://localhost:3000"
+               value="https://taller-api-rest-o1tt.onrender.com"
                placeholder="https://tu-api.onrender.com"
                style="width:320px;display:inline-block;"/>
       </div>
@@ -1448,35 +1448,78 @@ async function doGetCompanyById() {
 }
 
 async function doCreateCompany() {
-  const id = parseInt(document.getElementById('cId').value)
-  const name = document.getElementById('cName').value.trim()
-  const country = document.getElementById('cCountry').value.trim()
+  const id = parseInt(document.getElementById('cId').value);
+  const name = document.getElementById('cName').value.trim();
+  const country = document.getElementById('cCountry').value.trim();
 
-  if (!id || !name || !country) { toast('Completa todos los campos requeridos (*)', true); return }
+  if (!id || !name || !country) {
+    toast('Completa todos los campos requeridos (*)', true);
+    return;
+  }
 
-  const body = { id, name, country }
-  const result = await apiFetch('POST', '/api/companies', body)
-  showResp('companyCreateResp', result)
-  if (result.ok) toast('Empresa creada correctamente ✓', false, 'bi-building-add')
-  else toast('Error al crear empresa', true)
+  const body = { id, name, country };
+
+  const result = await apiFetch('POST', '/api/companies', body);
+
+  showResp('companyCreateResp', result);
+
+  if (result.ok) {
+
+    toast('Empresa creada correctamente ✓', false, 'bi-building-add');
+
+    await loadCompaniesGlobal();
+
+    if (typeof doGetCompanies === 'function') {
+      doGetCompanies();
+    }
+
+    document.getElementById('cId').value = '';
+    document.getElementById('cName').value = '';
+    document.getElementById('cCountry').value = '';
+
+  } else {
+    toast('Error al crear empresa', true);
+  }
 }
 
 async function doUpdateCompany() {
-  const id = document.getElementById('cUpdateId').value.trim()
-  if (!id) { toast('Ingresa el ID de la empresa', true); return }
+  const id = document.getElementById('cUpdateId').value.trim();
 
-  const body = {}
-  const name = document.getElementById('cUpdateName').value.trim()
-  const country = document.getElementById('cUpdateCountry').value.trim()
-  if (name) body.name = name
-  if (country) body.country = country
+  if (!id) {
+    toast('Ingresa el ID de la empresa', true);
+    return;
+  }
 
-  if (!Object.keys(body).length) { toast('Ingresa al menos un campo a actualizar', true); return }
+  const body = {};
 
-  const result = await apiFetch('PUT', `/api/companies/${id}`, body)
-  showResp('companyUpdateResp', result)
-  if (result.ok) toast('Empresa actualizada ✓', false, 'bi-pencil-fill')
-  else toast('Error al actualizar empresa', true)
+  const name = document.getElementById('cUpdateName').value.trim();
+  const country = document.getElementById('cUpdateCountry').value.trim();
+
+  if (name) body.name = name;
+  if (country) body.country = country;
+
+  if (!Object.keys(body).length) {
+    toast('Ingresa al menos un campo a actualizar', true);
+    return;
+  }
+
+  const result = await apiFetch('PUT', `/api/companies/${id}`, body);
+
+  showResp('companyUpdateResp', result);
+
+  if (result.ok) {
+
+    toast('Empresa actualizada ✓', false, 'bi-pencil-fill');
+
+    await loadCompaniesGlobal();
+
+    if (typeof doGetCompanies === 'function') {
+      doGetCompanies();
+    }
+
+  } else {
+    toast('Error al actualizar empresa', true);
+  }
 }
 
 async function doDeleteCompany() {
@@ -1641,7 +1684,7 @@ async function loadCompanies() {
       return;
     }
 
-    const res = await fetch('http://localhost:3000/api/companies', {
+    const res = await fetch('https://taller-api-rest-o1tt.onrender.com/api/companies', {
       headers: {
         Authorization: `Bearer ${token}`
       }
